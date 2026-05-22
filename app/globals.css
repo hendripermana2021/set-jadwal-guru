@@ -794,12 +794,18 @@ select {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 14px;
-  background: #fcfeff;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
 .stat-card h3 {
   font-size: 1.5rem;
   margin-bottom: 6px;
+}
+
+.stat-card p {
+  color: var(--muted);
 }
 
 .dashboard-grid {
@@ -813,11 +819,17 @@ select {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px;
-  background: #fcfeff;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
 .hint-card.accent {
-  background: linear-gradient(180deg, #eefbf8 0%, #ffffff 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-soft) 48%, var(--card)) 0%,
+    color-mix(in srgb, var(--card) 94%, transparent) 100%
+  );
 }
 
 .hint-card h2 {
@@ -857,7 +869,7 @@ select {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 10px;
-  background: #fcfdff;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
 }
 
 .drop-area h3 {
