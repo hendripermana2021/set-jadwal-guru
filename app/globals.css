@@ -545,6 +545,68 @@ select {
   min-width: 220px;
 }
 
+.searchable-select {
+  position: relative;
+  min-width: 220px;
+}
+
+.searchable-select input {
+  width: 100%;
+  min-width: 0;
+}
+
+.searchable-select-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(17, 34, 68, 0.14);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.searchable-select-item {
+  display: grid;
+  width: 100%;
+  text-align: left;
+  gap: 2px;
+  border: 0;
+  background: #fff;
+  padding: 9px 11px;
+  border-bottom: 1px solid #edf1f7;
+  cursor: pointer;
+}
+
+.searchable-select-item:last-child {
+  border-bottom: 0;
+}
+
+.searchable-select-item:hover {
+  background: #f6fbfb;
+}
+
+.searchable-select-item:disabled {
+  color: var(--muted);
+  background: #fafbfd;
+  cursor: not-allowed;
+}
+
+.searchable-select-item em {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-style: normal;
+}
+
+.searchable-select-empty {
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .btn {
   border: 1px solid var(--line);
   padding: 9px 12px;

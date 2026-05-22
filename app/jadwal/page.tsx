@@ -15,6 +15,7 @@ import { CSS } from "@dnd-kit/utilities";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import PopupNotice from "@/components/PopupNotice";
+import SearchableSelect from "@/components/SearchableSelect";
 import { findScheduleConflicts } from "@/lib/conflicts";
 import { loadData, saveData } from "@/lib/storage";
 import { AppData, DAYS, DayName } from "@/lib/types";
@@ -549,29 +550,19 @@ export default function JadwalPage() {
                 <p className="info-box">Status guru terpilih: {selectedTeacherStatus}</p>
 
                 <div className="row-form">
-                  <select
+                  <SearchableSelect
                     value={selectedTeacherId}
-                    onChange={(event) => setSelectedTeacherId(event.target.value)}
-                  >
-                    <option value="">Pilih Guru</option>
-                    {teacherOptions.map((teacher) => (
-                      <option key={teacher.id} value={teacher.id} disabled={teacher.disabled}>
-                        {teacher.name} - {teacher.statusLabel}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setSelectedTeacherId}
+                    options={teacherOptions}
+                    placeholder="Ketik nama guru..."
+                  />
 
-                  <select
+                  <SearchableSelect
                     value={selectedSubjectId}
-                    onChange={(event) => setSelectedSubjectId(event.target.value)}
-                  >
-                    <option value="">Pilih Mapel</option>
-                    {data.subjects.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setSelectedSubjectId}
+                    options={data.subjects}
+                    placeholder="Ketik nama mapel..."
+                  />
 
                   <select
                     value={String(effectiveDuration)}
