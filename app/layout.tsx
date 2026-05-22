@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import AppLogo from "@/components/AppLogo";
 import MainNav from "@/components/MainNav";
+import ThemeToggle from "@/components/ThemeToggle";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,7 +35,10 @@ export default function RootLayout({
       <body>
         <div className="app-shell">
           <header className="app-header">
-            <AppLogo />
+            <div className="app-header-top">
+              <AppLogo />
+              <ThemeToggle />
+            </div>
             <p>Penjadwalan Roster Guru, dan Ujian tanpa Excel manual. Dengan sistem dukungan penuh, Anda dapat mengatur jadwal dengan mudah dan efisien.</p>
             <MainNav />
           </header>

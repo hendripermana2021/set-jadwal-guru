@@ -1,12 +1,30 @@
 :root {
-  --bg: #f2f6fc;
-  --ink: #1a2638;
-  --muted: #5a6880;
-  --card: #ffffff;
-  --line: #d8e1ef;
+  --bg: #eef4ff;
+  --bg-layer-1: rgba(222, 246, 241, 0.72);
+  --bg-layer-2: rgba(255, 230, 187, 0.62);
+  --ink: #13253d;
+  --muted: #54637a;
+  --card: rgba(255, 255, 255, 0.72);
+  --line: rgba(176, 196, 220, 0.55);
   --brand: #0f766e;
-  --brand-soft: #dbf3ef;
+  --brand-soft: rgba(219, 243, 239, 0.75);
   --danger: #b42318;
+  --glass-shadow: 0 10px 30px rgba(15, 36, 68, 0.12);
+  --glass-blur: 16px;
+}
+
+html[data-theme="dark"] {
+  --bg: #081422;
+  --bg-layer-1: rgba(22, 82, 72, 0.34);
+  --bg-layer-2: rgba(108, 75, 30, 0.3);
+  --ink: #e8f1ff;
+  --muted: #9db0c9;
+  --card: rgba(12, 26, 42, 0.72);
+  --line: rgba(121, 149, 187, 0.32);
+  --brand: #2fc7ba;
+  --brand-soft: rgba(47, 199, 186, 0.2);
+  --danger: #ff8b84;
+  --glass-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
 }
 
 html {
@@ -23,8 +41,8 @@ body {
   min-height: 100%;
   color: var(--ink);
   background:
-    radial-gradient(circle at 10% 10%, #d4f2ea 0%, rgba(212, 242, 234, 0) 35%),
-    radial-gradient(circle at 90% 0%, #ffe7c6 0%, rgba(255, 231, 198, 0) 40%),
+    radial-gradient(circle at 8% 8%, var(--bg-layer-1) 0%, rgba(212, 242, 234, 0) 38%),
+    radial-gradient(circle at 90% 2%, var(--bg-layer-2) 0%, rgba(255, 231, 198, 0) 42%),
     var(--bg);
   font-family: var(--font-geist-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -55,6 +73,16 @@ a {
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 18px;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+}
+
+.app-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .app-brand {
@@ -110,8 +138,23 @@ a {
   padding: 8px 12px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--card);
   font-weight: 600;
+}
+
+.theme-toggle {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
 .nav-link.active {
@@ -130,7 +173,9 @@ a {
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 16px;
-  box-shadow: 0 8px 24px rgba(17, 34, 68, 0.08);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
 .panel-head h1 {
@@ -158,7 +203,7 @@ a {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #f8fbff;
+  background: color-mix(in srgb, var(--card) 78%, transparent);
   color: var(--muted);
   margin-bottom: 12px;
 }
@@ -167,9 +212,11 @@ a {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 14px;
-  background: #fcfeff;
+  background: color-mix(in srgb, var(--card) 84%, transparent);
   margin: 14px 0;
   min-width: 0;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
 .panel-sub h2 {
@@ -211,7 +258,7 @@ a {
   gap: 8px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fff;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
   padding: 8px 12px;
 }
 
@@ -235,7 +282,7 @@ a {
   width: max-content;
   min-width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
 }
 
 .timetable th,
@@ -250,7 +297,7 @@ a {
 .timetable td:first-child {
   min-width: 110px;
   white-space: nowrap;
-  background: #f8fbff;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
 }
 
 .cell-btn {
@@ -258,7 +305,7 @@ a {
   min-height: 90px;
   border: 1px dashed var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
   padding: 8px;
   cursor: pointer;
   display: grid;
@@ -291,7 +338,7 @@ a {
   border: 1px dashed transparent;
   border-radius: 12px;
   padding: 8px;
-  background: #fff;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
   display: grid;
   align-content: start;
   gap: 8px;
@@ -300,12 +347,12 @@ a {
 }
 
 .schedule-drop-cell.active {
-  background: #f7fcfb;
+  background: color-mix(in srgb, var(--brand-soft) 48%, var(--card));
   border-color: rgba(15, 118, 110, 0.22);
 }
 
 .schedule-drop-cell.is-over {
-  background: #eaf7f4;
+  background: color-mix(in srgb, var(--brand-soft) 64%, var(--card));
   border-color: var(--brand);
   transform: translateY(-1px);
 }
@@ -318,11 +365,11 @@ a {
 @keyframes slotPulse {
   0% {
     box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.45);
-    background: #eaf7f4;
+    background: color-mix(in srgb, var(--brand-soft) 64%, var(--card));
   }
   100% {
     box-shadow: 0 0 0 14px rgba(15, 118, 110, 0);
-    background: #fff;
+    background: color-mix(in srgb, var(--card) 90%, transparent);
   }
 }
 
@@ -334,7 +381,7 @@ a {
 .sched-card.draggable {
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
   padding: 10px;
   box-shadow: 0 8px 18px rgba(17, 34, 68, 0.08);
   position: relative;
@@ -389,21 +436,21 @@ a {
 }
 
 .legend-item.ok {
-  background: #eaf7f4;
-  color: #0f766e;
-  border: 1px solid #bde5dc;
+  background: color-mix(in srgb, var(--brand-soft) 68%, transparent);
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--brand) 32%, var(--line));
 }
 
 .legend-item.blocked {
-  background: #fff3e8;
-  color: #9a6700;
-  border: 1px solid #ffd8a8;
+  background: color-mix(in srgb, #ffb366 24%, transparent);
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, #ffb366 34%, var(--line));
 }
 
 .legend-item.conflict {
-  background: #fff1f0;
-  color: #b42318;
-  border: 1px solid #f5c2be;
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--danger) 34%, var(--line));
 }
 
 .popup-overlay {
@@ -418,7 +465,7 @@ a {
 
 .popup-card {
   width: min(460px, 100%);
-  background: #fff;
+  background: color-mix(in srgb, var(--card) 96%, transparent);
   border: 1px solid var(--line);
   border-radius: 14px;
   box-shadow: 0 18px 42px rgba(17, 34, 68, 0.28);
@@ -460,7 +507,7 @@ a {
   bottom: 20px;
   z-index: 70;
   width: min(460px, calc(100vw - 40px));
-  background: #fff;
+  background: color-mix(in srgb, var(--card) 96%, transparent);
   border: 1px solid var(--line);
   border-radius: 18px;
   box-shadow: 0 18px 42px rgba(17, 34, 68, 0.2);
@@ -473,7 +520,11 @@ a {
   gap: 12px;
   align-items: start;
   padding: 14px 16px;
-  background: linear-gradient(180deg, #f7fcfb 0%, #ffffff 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-soft) 42%, var(--card)) 0%,
+    color-mix(in srgb, var(--card) 96%, transparent) 100%
+  );
   border-bottom: 1px solid var(--line);
 }
 
@@ -543,6 +594,8 @@ select {
   border: 1px solid var(--line);
   border-radius: 10px;
   min-width: 220px;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  color: var(--ink);
 }
 
 .searchable-select {
@@ -561,7 +614,7 @@ select {
   left: 0;
   right: 0;
   z-index: 100;
-  background: #fff;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
   border: 1px solid var(--line);
   border-radius: 10px;
   box-shadow: 0 12px 28px rgba(17, 34, 68, 0.14);
@@ -575,7 +628,7 @@ select {
   text-align: left;
   gap: 2px;
   border: 0;
-  background: #fff;
+  background: transparent;
   padding: 9px 11px;
   border-bottom: 1px solid #edf1f7;
   cursor: pointer;
@@ -586,12 +639,12 @@ select {
 }
 
 .searchable-select-item:hover {
-  background: #f6fbfb;
+  background: color-mix(in srgb, var(--brand-soft) 52%, transparent);
 }
 
 .searchable-select-item:disabled {
   color: var(--muted);
-  background: #fafbfd;
+  background: color-mix(in srgb, var(--card) 86%, transparent);
   cursor: not-allowed;
 }
 
@@ -612,7 +665,8 @@ select {
   padding: 9px 12px;
   border-radius: 10px;
   cursor: pointer;
-  background: #fff;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  color: var(--ink);
   font-weight: 700;
 }
 
@@ -623,9 +677,9 @@ select {
 }
 
 .btn-danger {
-  background: #fff1f0;
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
   color: var(--danger);
-  border-color: #f5c2be;
+  border-color: color-mix(in srgb, var(--danger) 24%, var(--line));
 }
 
 .list-box {
@@ -708,13 +762,15 @@ select {
 }
 
 .warn-box {
-  background: #fff6e8;
-  border: 1px solid #ffd8a8;
+  background: color-mix(in srgb, #ffb366 18%, transparent);
+  border: 1px solid color-mix(in srgb, #ffb366 34%, var(--line));
+  color: var(--ink);
 }
 
 .info-box {
-  background: #eaf7f4;
-  border: 1px solid #bde5dc;
+  background: color-mix(in srgb, var(--brand-soft) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand) 28%, var(--line));
+  color: var(--ink);
 }
 
 .stats-grid {
@@ -788,7 +844,7 @@ select {
   padding: 10px 14px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: #fff;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
   font-weight: 700;
 }
 
@@ -827,7 +883,7 @@ select {
 
 .sched-card {
   border: 1px solid var(--line);
-  background: #fff;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
   border-radius: 10px;
   padding: 8px;
 }
@@ -866,7 +922,7 @@ select {
 
 .tab {
   border: 1px solid var(--line);
-  background: #fff;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
   border-radius: 999px;
   padding: 8px 12px;
   cursor: pointer;
@@ -879,6 +935,15 @@ select {
 }
 
 @media (max-width: 900px) {
+  .app-header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .theme-toggle {
+    width: fit-content;
+  }
+
   .app-shell {
     padding: 12px;
   }
