@@ -520,6 +520,34 @@ a {
   -webkit-backdrop-filter: none;
 }
 
+.slot-drawer.popover {
+  right: auto;
+  bottom: auto;
+  width: min(460px, calc(100vw - 24px));
+}
+
+.slot-drawer-pointer {
+  position: absolute;
+  top: 24px;
+  width: 16px;
+  height: 16px;
+  background: var(--editor-surface);
+  border: 1px solid var(--line);
+  transform: rotate(45deg);
+}
+
+.slot-drawer-pointer.left {
+  left: -8px;
+  border-top: 0;
+  border-right: 0;
+}
+
+.slot-drawer-pointer.right {
+  right: -8px;
+  border-bottom: 0;
+  border-left: 0;
+}
+
 .slot-drawer-header {
   display: flex;
   justify-content: space-between;
@@ -568,6 +596,18 @@ a {
 
   .slot-drawer {
     width: calc(100vw - 24px);
+  }
+
+  .slot-drawer.popover {
+    right: 12px;
+    left: 12px !important;
+    bottom: 12px;
+    top: auto !important;
+    width: auto;
+  }
+
+  .slot-drawer-pointer {
+    display: none;
   }
 
   .slot-drawer-header,

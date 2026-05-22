@@ -43,6 +43,11 @@ export default function JadwalPage() {
   const [selectedDuration, setSelectedDuration] = useState(1);
   const [notice, setNotice] = useState("");
   const [recentDropCell, setRecentDropCell] = useState<string | null>(null);
+  const [editorPopover, setEditorPopover] = useState<{
+    top: number;
+    left: number;
+    arrowSide: "left" | "right";
+  } | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -141,6 +146,41 @@ export default function JadwalPage() {
     return timeSlots.slice(startIndex, startIndex + count);
   }
 
+  function updateEditorAnchor(day: DayName, slot: string) {
+    if (typeof window === "undefined" || window.innerWidth < 960) {
+      setEditorPopover(null);
+      return;
+    }
+
+    const cellKey = `${day}|${slot}`;
+    const cell = document.querySelector(`[data-schedule-cell="${cellKey}"]`) as HTMLElement | null;
+
+    if (!cell) {
+      setEditorPopover(null);
+      return;
+    }
+
+    const rect = cell.getBoundingClientRect();
+    const drawerWidth = 460;
+    const gap = 14;
+
+    let left = rect.right + gap;
+    let arrowSide: "left" | "right" = "left";
+
+    if (left + drawerWidth > window.innerWidth - 12) {
+      left = rect.left - drawerWidth - gap;
+      arrowSide = "right";
+    }
+
+    if (left < 12) {
+      setEditorPopover(null);
+      return;
+    }
+
+    const top = Math.max(12, Math.min(rect.top - 8, window.innerHeight - 420));
+    setEditorPopover({ top, left, arrowSide });
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     if (!selectedClassId || !event.over) {
       return;
@@ -216,6 +256,7 @@ export default function JadwalPage() {
 
     setSelectedCell({ day: targetDay, timeSlot: targetSlot });
     setEditorOpen(true);
+    updateEditorAnchor(targetDay, targetSlot);
     setSelectedTeacherId(dragged.teacherId);
     setSelectedSubjectId(dragged.subjectId);
     setSelectedDuration(1);
@@ -226,6 +267,7 @@ export default function JadwalPage() {
   function selectCell(day: DayName, timeSlot: string) {
     setSelectedCell({ day, timeSlot });
     setEditorOpen(true);
+    updateEditorAnchor(day, timeSlot);
 
     const existing = data.schedules.find(
       (item) => item.classId === selectedClassId && item.day === day && item.timeSlot === timeSlot,
@@ -435,6 +477,7 @@ export default function JadwalPage() {
           onChange={(event) => {
             setSelectedClassId(event.target.value);
             setSelectedCell(null);
+            setEditorPopover(null);
             setSelectedTeacherId("");
             setSelectedSubjectId("");
           }}
@@ -495,6 +538,7 @@ export default function JadwalPage() {
                       <td key={`${day}-${slot}`}>
                         <ScheduleCellDrop
                           id={`cell|${day}|${slot}`}
+                          cellKey={`${day}|${slot}`}
                           active={active}
                           pulse={recentDropCell === `${day}|${slot}`}
                           onClick={() => selectCell(day, slot)}
@@ -527,7 +571,16 @@ export default function JadwalPage() {
       {selectedCell ? (
         <>
           {editorOpen ? (
-            <div className="slot-drawer" role="dialog" aria-modal="true" aria-label="Editor Slot Jadwal">
+            <div
+              className={`slot-drawer${editorPopover ? " popover" : ""}`}
+              style={editorPopover ? { top: editorPopover.top, left: editorPopover.left } : undefined}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Editor Slot Jadwal"
+            >
+              {editorPopover ? (
+                <span className={`slot-drawer-pointer ${editorPopover.arrowSide}`} aria-hidden="true" />
+              ) : null}
               <div className="slot-drawer-header">
                 <div>
                   <p className="slot-drawer-eyebrow">Editor Slot</p>
@@ -605,12 +658,14 @@ export default function JadwalPage() {
 
 function ScheduleCellDrop({
   id,
+  cellKey,
   active,
   pulse,
   onClick,
   children,
 }: {
   id: string;
+  cellKey: string;
   active: boolean;
   pulse: boolean;
   onClick: () => void;
@@ -630,6 +685,7 @@ function ScheduleCellDrop({
     <div
       ref={setNodeRef}
       className={className}
+      data-schedule-cell={cellKey}
       onClick={onClick}
       role="button"
       tabIndex={0}

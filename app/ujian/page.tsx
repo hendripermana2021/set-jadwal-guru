@@ -63,6 +63,11 @@ export default function UjianPage() {
 
   const [notice, setNotice] = useState("");
   const [recentDropCell, setRecentDropCell] = useState<string | null>(null);
+  const [editorPopover, setEditorPopover] = useState<{
+    top: number;
+    left: number;
+    arrowSide: "left" | "right";
+  } | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -199,9 +204,45 @@ export default function UjianPage() {
     );
   }
 
+  function updateEditorAnchor(date: string, classId: string, slot: string) {
+    if (typeof window === "undefined" || window.innerWidth < 960) {
+      setEditorPopover(null);
+      return;
+    }
+
+    const cellKey = `${date}|${classId}|${slot}`;
+    const cell = document.querySelector(`[data-exam-cell="${cellKey}"]`) as HTMLElement | null;
+
+    if (!cell) {
+      setEditorPopover(null);
+      return;
+    }
+
+    const rect = cell.getBoundingClientRect();
+    const drawerWidth = 460;
+    const gap = 14;
+
+    let left = rect.right + gap;
+    let arrowSide: "left" | "right" = "left";
+
+    if (left + drawerWidth > window.innerWidth - 12) {
+      left = rect.left - drawerWidth - gap;
+      arrowSide = "right";
+    }
+
+    if (left < 12) {
+      setEditorPopover(null);
+      return;
+    }
+
+    const top = Math.max(12, Math.min(rect.top - 8, window.innerHeight - 420));
+    setEditorPopover({ top, left, arrowSide });
+  }
+
   function openCellEditor(date: string, classId: string, timeSlot: string) {
     setSelectedCell({ date, classId, timeSlot });
     setEditorOpen(true);
+    updateEditorAnchor(date, classId, timeSlot);
 
     const existing = getEntry(date, classId, timeSlot);
     setSelectedTeacherId(existing?.teacherId ?? "");
@@ -558,6 +599,7 @@ export default function UjianPage() {
                       <td key={`${renderDate.date}-${classItem.id}-${slot}`}>
                         <ExamCellDrop
                           id={`exam-cell|${renderDate.date}|${classItem.id}|${slot}`}
+                          cellKey={`${renderDate.date}|${classItem.id}|${slot}`}
                           active={active}
                           pulse={recentDropCell === `${renderDate.date}|${classItem.id}|${slot}`}
                           onClick={() => openCellEditor(renderDate.date, classItem.id, slot)}
@@ -714,7 +756,16 @@ export default function UjianPage() {
       {selectedCell ? (
         <>
           {editorOpen ? (
-            <div className="slot-drawer" role="dialog" aria-modal="true" aria-label="Editor Slot Ujian">
+            <div
+              className={`slot-drawer${editorPopover ? " popover" : ""}`}
+              style={editorPopover ? { top: editorPopover.top, left: editorPopover.left } : undefined}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Editor Slot Ujian"
+            >
+              {editorPopover ? (
+                <span className={`slot-drawer-pointer ${editorPopover.arrowSide}`} aria-hidden="true" />
+              ) : null}
               <div className="slot-drawer-header">
                 <div>
                   <p className="slot-drawer-eyebrow">Editor Slot Ujian</p>
@@ -796,12 +847,14 @@ export default function UjianPage() {
 
 function ExamCellDrop({
   id,
+  cellKey,
   active,
   pulse,
   onClick,
   children,
 }: {
   id: string;
+  cellKey: string;
   active: boolean;
   pulse: boolean;
   onClick: () => void;
@@ -818,7 +871,14 @@ function ExamCellDrop({
         : "schedule-drop-cell";
 
   return (
-    <div ref={setNodeRef} className={className} onClick={onClick} role="button" tabIndex={0}>
+    <div
+      ref={setNodeRef}
+      className={className}
+      data-exam-cell={cellKey}
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+    >
       {children}
     </div>
   );
