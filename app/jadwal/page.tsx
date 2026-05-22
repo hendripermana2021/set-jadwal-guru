@@ -824,7 +824,8 @@ function printRosterHtml({ title, rows }: { title: string; rows: PrintRow[] }) {
       <head>
         <title>${title}</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 24px; color: #172033; }
+          @page { margin: 5cm 1.5cm 1.5cm 1.5cm; }
+          body { font-family: Arial, sans-serif; margin: 0; color: #172033; }
           h1 { margin-bottom: 6px; font-size: 24px; text-align: center; }
           .kop { text-align: center; margin-bottom: 14px; }
           .kop .school { font-size: 16px; font-weight: 700; letter-spacing: 0.4px; }
@@ -839,7 +840,6 @@ function printRosterHtml({ title, rows }: { title: string; rows: PrintRow[] }) {
       </head>
       <body>
         <div class="kop">
-          <div class="school">NAMA SEKOLAH</div>
           <div class="title">KARTU ${title.toUpperCase()}</div>
         </div>
         <h1>${title}</h1>
@@ -857,7 +857,6 @@ function printRosterHtml({ title, rows }: { title: string; rows: PrintRow[] }) {
           <tbody>${bodyRows}</tbody>
         </table>
         <div class="footer">
-          <span>Dibuat oleh Roster Guru Next</span>
           <span>Halaman cetak</span>
         </div>
       </body>
@@ -930,8 +929,6 @@ function exportRosterPdf({
 }) {
   const pdf = new jsPDF();
 
-  pdf.setFontSize(12);
-  pdf.text("NAMA SEKOLAH", 105, 14, { align: "center" });
   pdf.setFontSize(18);
   pdf.text(`KARTU ${title.toUpperCase()}`, 105, 22, { align: "center" });
   pdf.setFontSize(10);
@@ -955,10 +952,6 @@ function exportRosterPdf({
     didDrawPage: () => {
       const pageHeight = pdf.internal.pageSize.getHeight();
       pdf.setFontSize(9);
-      pdf.text("Dibuat oleh Roster Guru Next", 14, pageHeight - 10);
-      pdf.text(`Halaman ${pdf.getCurrentPageInfo().pageNumber}`, 196, pageHeight - 10, {
-        align: "right",
-      });
     },
   });
 

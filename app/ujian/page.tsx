@@ -59,6 +59,7 @@ export default function UjianPage() {
   const [selectedTeacherId, setSelectedTeacherId] = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [selectedExamType, setSelectedExamType] = useState(EXAM_TYPES[0]);
+  const [selectedDuration, setSelectedDuration] = useState(1);
   const [notes, setNotes] = useState("");
 
   const [notice, setNotice] = useState("");
@@ -123,6 +124,21 @@ export default function UjianPage() {
     );
   }, [data.examSchedules, selectedCell]);
 
+  const maxDuration = useMemo(() => {
+    if (!selectedCell) {
+      return 1;
+    }
+
+    const startIndex = data.examTimeSlots.indexOf(selectedCell.timeSlot);
+    if (startIndex < 0) {
+      return 1;
+    }
+
+    return Math.max(1, data.examTimeSlots.length - startIndex);
+  }, [data.examTimeSlots, selectedCell]);
+
+  const effectiveDuration = Math.min(Math.max(1, selectedDuration), maxDuration);
+
   const teacherOptions = useMemo(() => {
     if (!selectedCell) {
       return data.teachers.map((teacher) => ({
@@ -180,7 +196,17 @@ export default function UjianPage() {
     setSelectedTeacherId("");
     setSelectedSubjectId("");
     setSelectedExamType(EXAM_TYPES[0]);
+    setSelectedDuration(1);
     setNotes("");
+  }
+
+  function getSequentialExamSlots(startSlot: string, count: number) {
+    const startIndex = data.examTimeSlots.indexOf(startSlot);
+    if (startIndex < 0) {
+      return [] as string[];
+    }
+
+    return data.examTimeSlots.slice(startIndex, startIndex + count);
   }
 
   function getEntry(date: string, classId: string, timeSlot: string) {
@@ -248,6 +274,7 @@ export default function UjianPage() {
     setSelectedTeacherId(existing?.teacherId ?? "");
     setSelectedSubjectId(existing?.subjectId ?? "");
     setSelectedExamType(existing?.examType || EXAM_TYPES[0]);
+    setSelectedDuration(1);
     setNotes(existing?.notes ?? "");
     setNotice("");
   }
@@ -262,28 +289,36 @@ export default function UjianPage() {
       return;
     }
 
-    const dayName = getDayNameFromDate(selectedCell.date);
-    if (dayName && blockedByTeacher.get(selectedTeacherId)?.has(`${dayName}|${selectedCell.timeSlot}`)) {
-      setNotice("Guru tidak tersedia pada slot ini sesuai aturan guru.");
+    const duration = Math.max(1, Number.isFinite(effectiveDuration) ? Math.floor(effectiveDuration) : 1);
+    const targetSlots = getSequentialExamSlots(selectedCell.timeSlot, duration);
+
+    if (targetSlots.length === 0) {
+      setNotice("Slot awal ujian tidak ditemukan.");
       return;
     }
 
-    const duplicateTeacher = findTeacherConflict({
-      date: selectedCell.date,
-      teacherId: selectedTeacherId,
-      timeSlot: selectedCell.timeSlot,
-      excludeId: selectedExam?.id,
-    });
+    if (selectedExam && duration === 1) {
+      const dayName = getDayNameFromDate(selectedCell.date);
+      if (dayName && blockedByTeacher.get(selectedTeacherId)?.has(`${dayName}|${selectedCell.timeSlot}`)) {
+        setNotice("Guru tidak tersedia pada slot ini sesuai aturan guru.");
+        return;
+      }
 
-    if (duplicateTeacher) {
-      const conflictClass = classMap.get(duplicateTeacher.classId) ?? "Kelas lain";
-      setNotice(
-        `Bentrok pengawas: ${teacherMap.get(selectedTeacherId) ?? "Guru"} sudah di ${conflictClass} pada ${formatExamDate(selectedCell.date)} ${selectedCell.timeSlot}.`,
-      );
-      return;
-    }
+      const duplicateTeacher = findTeacherConflict({
+        date: selectedCell.date,
+        teacherId: selectedTeacherId,
+        timeSlot: selectedCell.timeSlot,
+        excludeId: selectedExam.id,
+      });
 
-    if (selectedExam) {
+      if (duplicateTeacher) {
+        const conflictClass = classMap.get(duplicateTeacher.classId) ?? "Kelas lain";
+        setNotice(
+          `Bentrok pengawas: ${teacherMap.get(selectedTeacherId) ?? "Guru"} sudah di ${conflictClass} pada ${formatExamDate(selectedCell.date)} ${selectedCell.timeSlot}.`,
+        );
+        return;
+      }
+
       updateData({
         ...data,
         examSchedules: data.examSchedules.map((item) =>
@@ -298,26 +333,114 @@ export default function UjianPage() {
             : item,
         ),
       });
-    } else {
-      updateData({
-        ...data,
-        examSchedules: [
-          ...data.examSchedules,
-          {
-            id: crypto.randomUUID(),
-            date: selectedCell.date,
-            classId: selectedCell.classId,
-            timeSlot: selectedCell.timeSlot,
-            subjectId: selectedSubjectId,
-            teacherId: selectedTeacherId,
-            examType: selectedExamType || "Ujian",
-            notes: notes.trim() || undefined,
-          },
-        ],
-      });
+
+      pulseCell(selectedCell.date, selectedCell.classId, selectedCell.timeSlot);
+      setSelectedTeacherId("");
+      setSelectedSubjectId("");
+      setNotice("");
+      return;
     }
 
-    pulseCell(selectedCell.date, selectedCell.classId, selectedCell.timeSlot);
+    const failures: string[] = [];
+    const validSlots: string[] = [];
+
+    targetSlots.forEach((slot) => {
+      const currentSlotExamId =
+        selectedExam && slot === selectedCell.timeSlot ? selectedExam.id : undefined;
+      const dayName = getDayNameFromDate(selectedCell.date);
+
+      if (dayName && blockedByTeacher.get(selectedTeacherId)?.has(`${dayName}|${slot}`)) {
+        failures.push(`${formatExamDate(selectedCell.date)} ${slot} terblokir aturan guru`);
+        return;
+      }
+
+      const occupiedClass = data.examSchedules.find(
+        (item) =>
+          item.date === selectedCell.date &&
+          item.classId === selectedCell.classId &&
+          item.timeSlot === slot &&
+          item.id !== currentSlotExamId,
+      );
+
+      if (occupiedClass) {
+        failures.push(`${formatExamDate(selectedCell.date)} ${slot} sudah terisi`);
+        return;
+      }
+
+      const duplicateTeacher = findTeacherConflict({
+        date: selectedCell.date,
+        teacherId: selectedTeacherId,
+        timeSlot: slot,
+        excludeId: currentSlotExamId,
+      });
+
+      if (duplicateTeacher) {
+        const conflictClass = classMap.get(duplicateTeacher.classId) ?? "Kelas lain";
+        failures.push(`${formatExamDate(selectedCell.date)} ${slot} bentrok di ${conflictClass}`);
+        return;
+      }
+
+      validSlots.push(slot);
+    });
+
+    if (validSlots.length === 0) {
+      setNotice(`Gagal menyimpan slot ujian. ${failures[0] ?? "Tidak ada slot yang valid."}`);
+      return;
+    }
+
+    const nextExamSchedules = [...data.examSchedules];
+
+    validSlots.forEach((slot) => {
+      const existing = nextExamSchedules.find(
+        (item) =>
+          item.date === selectedCell.date &&
+          item.classId === selectedCell.classId &&
+          item.timeSlot === slot,
+      );
+
+      if (existing && existing.id === selectedExam?.id) {
+        existing.teacherId = selectedTeacherId;
+        existing.subjectId = selectedSubjectId;
+        existing.examType = selectedExamType || "Ujian";
+        existing.notes = notes.trim() || undefined;
+        return;
+      }
+
+      if (!existing) {
+        nextExamSchedules.push({
+          id: crypto.randomUUID(),
+          date: selectedCell.date,
+          classId: selectedCell.classId,
+          timeSlot: slot,
+          subjectId: selectedSubjectId,
+          teacherId: selectedTeacherId,
+          examType: selectedExamType || "Ujian",
+          notes: notes.trim() || undefined,
+        });
+      }
+    });
+
+    updateData({
+      ...data,
+      examSchedules: nextExamSchedules,
+    });
+
+    pulseCell(selectedCell.date, selectedCell.classId, validSlots[0]);
+    setSelectedTeacherId("");
+    setSelectedSubjectId("");
+
+    if (failures.length > 0) {
+      setNotice(
+        `Berhasil simpan ${validSlots.length} slot ujian, ${failures.length} slot dilewati. Contoh: ${failures[0]}`,
+      );
+      return;
+    }
+
+    if (validSlots.length > 1) {
+      setNotice(`Berhasil simpan ${validSlots.length} slot ujian berurutan.`);
+      return;
+    }
+
     setNotice("");
   }
 
@@ -406,6 +529,7 @@ export default function UjianPage() {
     setSelectedTeacherId(dragged.teacherId);
     setSelectedSubjectId(dragged.subjectId);
     setSelectedExamType(dragged.examType || EXAM_TYPES[0]);
+    setSelectedDuration(1);
     setNotes(dragged.notes ?? "");
     pulseCell(targetDate, targetClassId, targetSlot);
     setNotice("");
@@ -813,6 +937,17 @@ export default function UjianPage() {
                     ))}
                   </select>
 
+                  <select
+                    value={String(effectiveDuration)}
+                    onChange={(event) => setSelectedDuration(Math.max(1, Number.parseInt(event.target.value, 10) || 1))}
+                  >
+                    {Array.from({ length: maxDuration }, (_, index) => index + 1).map((value) => (
+                      <option key={value} value={value}>
+                        {value} Jam
+                      </option>
+                    ))}
+                  </select>
+
                   <input
                     value={notes}
                     onChange={(event) => setNotes(event.target.value)}
@@ -832,6 +967,7 @@ export default function UjianPage() {
                   <span className="legend-item blocked">Tidak tersedia oleh aturan guru</span>
                   <span className="legend-item conflict">Bentrok pengawas di kelas lain</span>
                 </div>
+                <p className="info-box">Jumlah jam ujian akan diisi berurutan mulai dari slot yang dipilih.</p>
               </div>
             </div>
           ) : (
@@ -1027,8 +1163,6 @@ function exportExamPdf({
 }) {
   const pdf = new jsPDF("l", "mm", "a4");
 
-  pdf.setFontSize(12);
-  pdf.text("NAMA SEKOLAH", 148, 12, { align: "center" });
   pdf.setFontSize(18);
   pdf.text("JADWAL UJIAN", 148, 20, { align: "center" });
   pdf.setFontSize(11);
@@ -1038,39 +1172,92 @@ function exportExamPdf({
   pdf.text(`Total baris: ${rows.length}`, 14, 39);
   pdf.line(14, 43, 283, 43);
 
+  const mergedBody = buildMergedExamPdfBody(rows);
+
   autoTable(pdf, {
     startY: 47,
-    head: [["Tanggal", "Hari", "Jam", "Kelas", "Mapel", "Pengawas", "Jenis", "Catatan"]],
-    body: rows.length
-      ? rows.map((row) => [
-          row.date,
-          row.day,
-          row.time,
-          row.className,
-          row.subject,
-          row.teacher,
-          row.examType,
-          row.notes,
-        ])
-      : [["Tidak ada data", "", "", "", "", "", "", ""]],
+    columns: [
+      { header: "Tanggal", dataKey: "date" },
+      { header: "Hari", dataKey: "day" },
+      { header: "Jam", dataKey: "time" },
+      { header: "Kelas", dataKey: "className" },
+      { header: "Mapel", dataKey: "subject" },
+      { header: "Pengawas", dataKey: "teacher" },
+      { header: "Jenis", dataKey: "examType" },
+      { header: "Catatan", dataKey: "notes" },
+    ],
+    body: (rows.length
+      ? mergedBody
+      : [{ date: "Tidak ada data", day: "", time: "", className: "", subject: "", teacher: "", examType: "", notes: "" }]) as unknown as string[][],
     styles: {
       fontSize: 8,
       cellPadding: 2,
+      lineWidth: 0.2,
+      lineColor: [120, 120, 120],
     },
     headStyles: {
       fillColor: [15, 118, 110],
+      lineWidth: 0.25,
+      lineColor: [80, 80, 80],
+    },
+    bodyStyles: {
+      fillColor: [255, 255, 255],
+      lineWidth: 0.2,
+      lineColor: [120, 120, 120],
+    },
+    alternateRowStyles: {
+      fillColor: [255, 255, 255],
     },
     didDrawPage: () => {
-      const pageHeight = pdf.internal.pageSize.getHeight();
       pdf.setFontSize(8);
-      pdf.text("Dibuat oleh Roster Guru Next", 14, pageHeight - 8);
-      pdf.text(`Halaman ${pdf.getCurrentPageInfo().pageNumber}`, 283, pageHeight - 8, {
-        align: "right",
-      });
     },
   });
 
   pdf.save(fileName);
+}
+
+function buildMergedExamPdfBody(rows: PdfRow[]) {
+  const keys = ["date", "day", "time", "className", "subject", "teacher", "examType", "notes"] as const;
+  const mergeKeys = ["date", "day", "time", "className", "teacher", "examType"] as const;
+
+  const rowSpans = rows.map(() =>
+    Object.fromEntries(keys.map((key) => [key, 1])) as Record<(typeof keys)[number], number>,
+  );
+
+  mergeKeys.forEach((key) => {
+    let start = 0;
+
+    while (start < rows.length) {
+      let end = start + 1;
+
+      while (end < rows.length && rows[end][key] === rows[start][key]) {
+        end += 1;
+      }
+
+      rowSpans[start][key] = end - start;
+      for (let i = start + 1; i < end; i += 1) {
+        rowSpans[i][key] = 0;
+      }
+
+      start = end;
+    }
+  });
+
+  return rows.map((row, rowIndex) => {
+    const output: Record<string, string | { content: string; rowSpan: number }> = {};
+
+    keys.forEach((key) => {
+      const span = rowSpans[rowIndex][key];
+      if (span === 0) {
+        return;
+      }
+
+      const value = row[key] || "-";
+      output[key] = span > 1 ? { content: value, rowSpan: span } : value;
+    });
+
+    return output;
+  });
 }
 
 function formatExamDate(value: string) {
