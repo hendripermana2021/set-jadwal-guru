@@ -250,7 +250,7 @@ export default function JadwalPage() {
     }
 
     if (!selectedTeacherId || !selectedSubjectId) {
-      setNotice("");
+      setNotice("Nama guru dan mapel harus diisi terlebih dahulu.");
       return;
     }
 

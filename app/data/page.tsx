@@ -167,7 +167,11 @@ export default function DataPage() {
     <section className="panel">
       <div className="panel-head">
         <h1>Import / Export Data</h1>
-        <p>Gunakan menu ini untuk backup dan restore data lewat Excel karena aplikasi tidak menggunakan database.</p>
+        <p>
+          Gunakan menu ini untuk backup dan restore data lewat Excel karena aplikasi tidak menggunakan database.
+          Backup Data menyimpan Guru, Kelas, Mapel, Jadwal Roster, Jadwal Ujian, Jam Pelajaran, Jam Ujian,
+          dan Aturan Guru.
+        </p>
       </div>
 
       <div className="stats-grid">
@@ -191,14 +195,18 @@ export default function DataPage() {
           <h3>{data.examSchedules.length}</h3>
           <p>Jadwal Ujian</p>
         </div>
+        <div className="stat-card">
+          <h3>{data.teacherRules.length}</h3>
+          <p>Aturan Guru</p>
+        </div>
       </div>
 
       <div className="row-form">
         <button type="button" className="btn btn-primary" onClick={handleExportExcel}>
-          Backup Data
+          Backup Data Lengkap
         </button>
         <button type="button" className="btn" onClick={handleExportTemplateExcel}>
-          Unduh Template Data
+          Unduh Template Kosong
         </button>
         <label className="btn" htmlFor="import-json">
           Import Data
