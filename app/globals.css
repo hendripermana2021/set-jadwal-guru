@@ -1005,6 +1005,171 @@ html[data-theme="dark"] .slot-drawer .searchable-select-empty {
   border-color: var(--brand);
 }
 
+label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.row-form > * {
+  min-width: 0;
+}
+
+.row-form > label,
+.row-form > .searchable-select {
+  flex: 1 1 220px;
+}
+
+.row-form > .btn,
+.row-form > button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 1100px) {
+  .app-shell {
+    max-width: 100%;
+    padding: 14px;
+  }
+
+  .panel,
+  .app-header {
+    border-radius: 14px;
+    padding: 14px;
+  }
+}
+
+@media (max-width: 900px) {
+  .top-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .top-nav .nav-link {
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    padding: 10px;
+    gap: 12px;
+  }
+
+  .app-header,
+  .panel,
+  .panel-sub,
+  .hint-card,
+  .stat-card,
+  .rule-day {
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .app-header p,
+  .panel-head p {
+    font-size: 0.92rem;
+  }
+
+  .app-brand-title {
+    font-size: 1.04rem;
+  }
+
+  .app-brand-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .summary-strip {
+    font-size: 0.88rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sheet-preview-grid,
+  .slot-grid,
+  .rules-grid,
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .list-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .list-row strong {
+    word-break: break-word;
+  }
+
+  .row-actions {
+    width: 100%;
+  }
+
+  .row-actions .btn {
+    flex: 1 1 140px;
+  }
+
+  .row-form {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .row-form > label,
+  .row-form > .searchable-select,
+  .row-form > input,
+  .row-form > select,
+  .row-form > .btn,
+  .row-form > button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .slot-chip {
+    width: 100%;
+    border-radius: 12px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .slot-chip input,
+  .slot-chip .btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .timetable th,
+  .timetable td {
+    min-width: 120px;
+    padding: 6px;
+  }
+
+  .timetable th:first-child,
+  .timetable td:first-child {
+    min-width: 92px;
+  }
+
+  .cell-btn,
+  .schedule-drop-cell {
+    min-height: 82px;
+  }
+
+  .sched-footer {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .sched-footer .btn {
+    width: 100%;
+  }
+}
+
 @media (max-width: 900px) {
   .app-header-top {
     flex-direction: column;

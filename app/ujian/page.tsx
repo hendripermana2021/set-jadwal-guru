@@ -53,6 +53,9 @@ export default function UjianPage() {
   const [editingSlot, setEditingSlot] = useState<string | null>(null);
   const [editStart, setEditStart] = useState("07:30");
   const [editEnd, setEditEnd] = useState("09:00");
+  const [exportClassId, setExportClassId] = useState("");
+  const [headmasterName, setHeadmasterName] = useState("");
+  const [signatureDate, setSignatureDate] = useState(() => todayIsoDate());
 
   const [selectedCell, setSelectedCell] = useState<CellSelection | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -83,6 +86,11 @@ export default function UjianPage() {
     data.classes.forEach((item) => map.set(item.id, item.name));
     return map;
   }, [data.classes]);
+
+  const exportClassOptions = useMemo(
+    () => data.classes.map((item) => ({ id: item.id, name: item.name })),
+    [data.classes],
+  );
 
   const subjectMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -686,7 +694,35 @@ export default function UjianPage() {
 
     const fileName = `jadwal-ujian-rentang-${rangeStartDate}-sampai-${rangeEndDate}.pdf`;
 
-    exportExamPdf({ fileName, title, rows });
+    exportExamPdf({ fileName, title, rows, headmasterName: headmasterName.trim(), signatureDate });
+  }
+
+  function exportPdfSelectedClass() {
+    if (!exportClassId) {
+      setNotice("Pilih kelas yang akan diexport terlebih dahulu.");
+      return;
+    }
+
+    const className = classMap.get(exportClassId) ?? "Kelas";
+    const rows = buildPdfRows(
+      data,
+      renderDates.map((item) => item.date),
+      teacherMap,
+      classMap,
+      subjectMap,
+      exportClassId,
+    );
+
+    const title = `Jadwal Ujian ${className} | ${formatExamDate(rangeStartDate)} - ${formatExamDate(rangeEndDate)}`;
+    const fileName = `jadwal-ujian-${exportClassId}-${rangeStartDate}-sampai-${rangeEndDate}.pdf`;
+
+    exportExamPdf({
+      fileName,
+      title,
+      rows,
+      headmasterName: headmasterName.trim(),
+      signatureDate,
+    });
   }
 
   function renderTableByDate(renderDate: RenderDate) {
@@ -791,6 +827,42 @@ export default function UjianPage() {
 
         <button type="button" className="btn btn-primary" onClick={exportPdfCurrentView}>
           Export PDF Ujian
+        </button>
+      </div>
+
+      <div className="row-form">
+        <label>
+          Kelas yang Diexport
+          <select value={exportClassId} onChange={(event) => setExportClassId(event.target.value)}>
+            <option value="">Pilih kelas...</option>
+            {exportClassOptions.map((classItem) => (
+              <option key={classItem.id} value={classItem.id}>
+                {classItem.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Nama Kepala Sekolah
+          <input
+            value={headmasterName}
+            onChange={(event) => setHeadmasterName(event.target.value)}
+            placeholder="Contoh: Drs. Ahmad Siregar"
+          />
+        </label>
+
+        <label>
+          Tanggal Tanda Tangan
+          <input
+            type="date"
+            value={signatureDate}
+            onChange={(event) => setSignatureDate(event.target.value)}
+          />
+        </label>
+
+        <button type="button" className="btn btn-primary" onClick={exportPdfSelectedClass}>
+          Export PDF Per Kelas
         </button>
       </div>
 
@@ -1124,11 +1196,12 @@ function buildPdfRows(
   teacherMap: Map<string, string>,
   classMap: Map<string, string>,
   subjectMap: Map<string, string>,
+  classId?: string,
 ): PdfRow[] {
   const dateSet = new Set(dates);
 
   return data.examSchedules
-    .filter((item) => dateSet.has(item.date))
+    .filter((item) => dateSet.has(item.date) && (!classId || item.classId === classId))
     .sort((a, b) => {
       if (a.date !== b.date) {
         return a.date.localeCompare(b.date, "id");
@@ -1156,10 +1229,14 @@ function exportExamPdf({
   fileName,
   title,
   rows,
+  headmasterName,
+  signatureDate,
 }: {
   fileName: string;
   title: string;
   rows: PdfRow[];
+  headmasterName: string;
+  signatureDate: string;
 }) {
   const pdf = new jsPDF("l", "mm", "a4");
 
@@ -1175,7 +1252,7 @@ function exportExamPdf({
   const mergedBody = buildMergedExamPdfBody(rows);
 
   autoTable(pdf, {
-    startY: 47,
+    startY: 50,
     columns: [
       { header: "Tanggal", dataKey: "date" },
       { header: "Hari", dataKey: "day" },
@@ -1211,6 +1288,26 @@ function exportExamPdf({
     didDrawPage: () => {
       pdf.setFontSize(8);
     },
+  });
+
+  const finalY = (pdf as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? 47;
+  let signatureY = finalY + 18;
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  if (signatureY + 40 > pageHeight) {
+    pdf.addPage();
+    signatureY = 40;
+  }
+
+  const signTextX = 198;
+  const signLineWidth = 72;
+  pdf.setFontSize(10);
+  pdf.text(`Tanggal, ${formatSignatureDate(signatureDate)}`, signTextX, signatureY);
+  pdf.text("Mengetahui,", signTextX, signatureY + 6);
+  pdf.text("Kepala Sekolah", signTextX, signatureY + 12);
+  pdf.line(signTextX - 6, signatureY + 24, signTextX + signLineWidth, signatureY + 24);
+  pdf.text(headmasterName || "(Nama Kepala Sekolah)", signTextX + signLineWidth / 2 - 6, signatureY + 32, {
+    align: "center",
   });
 
   pdf.save(fileName);
@@ -1257,6 +1354,27 @@ function buildMergedExamPdfBody(rows: PdfRow[]) {
     });
 
     return output;
+  });
+}
+
+function formatSignatureDate(value: string) {
+  if (!value) {
+    return "-";
+  }
+
+  const [yearRaw, monthRaw, dayRaw] = value.split("-");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+
+  if (!year || !month || !day) {
+    return value;
+  }
+
+  return new Date(year, month - 1, day).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
   });
 }
 

@@ -42,6 +42,8 @@ export default function JadwalPage() {
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [selectedDuration, setSelectedDuration] = useState(1);
   const [notice, setNotice] = useState("");
+  const [rosterHeadmasterName, setRosterHeadmasterName] = useState("");
+  const [rosterSignatureDate, setRosterSignatureDate] = useState(() => todayIsoDate());
   const [recentDropCell, setRecentDropCell] = useState<string | null>(null);
   const [editorPopover, setEditorPopover] = useState<{
     top: number;
@@ -405,6 +407,8 @@ export default function JadwalPage() {
     printRosterHtml({
       title: `Roster Kelas ${selectedClassName}`,
       rows,
+      headmasterName: rosterHeadmasterName.trim(),
+      signatureDate: rosterSignatureDate,
     });
   }
 
@@ -413,6 +417,8 @@ export default function JadwalPage() {
     printRosterHtml({
       title: "Roster Semua Kelas",
       rows,
+      headmasterName: rosterHeadmasterName.trim(),
+      signatureDate: rosterSignatureDate,
     });
   }
 
@@ -427,6 +433,8 @@ export default function JadwalPage() {
       fileName: `roster-kelas-${selectedClassName.toLowerCase().replace(/\s+/g, "-")}.pdf`,
       title: `Roster Kelas ${selectedClassName}`,
       rows,
+      headmasterName: rosterHeadmasterName.trim(),
+      signatureDate: rosterSignatureDate,
     });
   }
 
@@ -502,6 +510,26 @@ export default function JadwalPage() {
         <Link href="/jam-pelajaran" className="btn">
           Buka Menu Jam Pelajaran
         </Link>
+      </div>
+
+      <div className="row-form">
+        <label>
+          Nama Kepala Sekolah
+          <input
+            value={rosterHeadmasterName}
+            onChange={(event) => setRosterHeadmasterName(event.target.value)}
+            placeholder="Contoh: Drs. Ahmad Siregar"
+          />
+        </label>
+
+        <label>
+          Tanggal Tanda Tangan
+          <input
+            type="date"
+            value={rosterSignatureDate}
+            onChange={(event) => setRosterSignatureDate(event.target.value)}
+          />
+        </label>
       </div>
 
       {notice ? <PopupNotice message={notice} onClose={() => setNotice("")} /> : null}
@@ -808,7 +836,17 @@ function buildAllClassRows(
     }));
 }
 
-function printRosterHtml({ title, rows }: { title: string; rows: PrintRow[] }) {
+function printRosterHtml({
+  title,
+  rows,
+  headmasterName,
+  signatureDate,
+}: {
+  title: string;
+  rows: PrintRow[];
+  headmasterName: string;
+  signatureDate: string;
+}) {
   const win = window.open("", "_blank", "width=1000,height=700");
   if (!win) {
     return;
@@ -818,6 +856,8 @@ function printRosterHtml({ title, rows }: { title: string; rows: PrintRow[] }) {
     rows.length === 0
       ? '<tr><td colspan="5">Tidak ada data.</td></tr>'
       : buildMergedRosterTableBody(rows);
+
+  const signatureDateLabel = formatSignatureDate(signatureDate);
 
   win.document.write(`
     <html>
@@ -836,14 +876,18 @@ function printRosterHtml({ title, rows }: { title: string; rows: PrintRow[] }) {
           th { background: #eef3fb; }
           tr:nth-child(even) td { background: #fafcff; }
           .footer { margin-top: 18px; display: flex; justify-content: space-between; color: #5a6880; font-size: 12px; }
+          .signature-block { margin-top: 32px; display: flex; justify-content: flex-end; }
+          .signature-inner { text-align: center; min-width: 180px; }
+          .signature-inner .sig-date { margin-bottom: 4px; font-size: 12px; }
+          .signature-inner .sig-role { font-size: 12px; margin-bottom: 64px; }
+          .signature-inner .sig-line { border-top: 1px solid #172033; padding-top: 4px; font-weight: 700; font-size: 13px; }
         </style>
       </head>
       <body>
         <div class="kop">
-          <div class="title">KARTU ${title.toUpperCase()}</div>
+          <div class="title">KARTU ${escapeHtml(title.toUpperCase())}</div>
         </div>
-        <h1>${title}</h1>
-        <p class="meta">Tanggal cetak: ${new Date().toLocaleString("id-ID")} | Total baris: ${rows.length}</p>
+        <h1>${escapeHtml(title)}</h1>
         <table>
           <thead>
             <tr>
@@ -856,6 +900,13 @@ function printRosterHtml({ title, rows }: { title: string; rows: PrintRow[] }) {
           </thead>
           <tbody>${bodyRows}</tbody>
         </table>
+        <div class="signature-block">
+          <div class="signature-inner">
+            <div class="sig-date">Tanggal, ${escapeHtml(signatureDateLabel)}</div>
+            <div class="sig-role">Mengetahui,<br/>Kepala Sekolah</div>
+            <div class="sig-line">${escapeHtml(headmasterName || "(Nama Kepala Sekolah)")}</div>
+          </div>
+        </div>
         <div class="footer">
           <span>Halaman cetak</span>
         </div>
@@ -865,6 +916,52 @@ function printRosterHtml({ title, rows }: { title: string; rows: PrintRow[] }) {
   win.document.close();
   win.focus();
   win.print();
+}
+
+type PrintRowKey = keyof PrintRow;
+
+function buildMergedRosterPdfBody(rows: PrintRow[]) {
+  const keys: PrintRowKey[] = ["day", "time", "teacher", "className", "subject"];
+  const mergeKeys: PrintRowKey[] = ["day", "teacher", "className", "subject"];
+
+  const rowSpans = rows.map(() =>
+    Object.fromEntries(keys.map((key) => [key, 1])) as Record<PrintRowKey, number>,
+  );
+
+  mergeKeys.forEach((key) => {
+    let start = 0;
+
+    while (start < rows.length) {
+      let end = start + 1;
+
+      while (end < rows.length && rows[end][key] === rows[start][key]) {
+        end += 1;
+      }
+
+      rowSpans[start][key] = end - start;
+      for (let i = start + 1; i < end; i += 1) {
+        rowSpans[i][key] = 0;
+      }
+
+      start = end;
+    }
+  });
+
+  return rows.map((row, rowIndex) => {
+    const output: Record<string, string | { content: string; rowSpan: number }> = {};
+
+    keys.forEach((key) => {
+      const span = rowSpans[rowIndex][key];
+      if (span === 0) {
+        return;
+      }
+
+      const value = row[key] || "-";
+      output[key] = span > 1 ? { content: value, rowSpan: span } : value;
+    });
+
+    return output;
+  });
 }
 
 function buildMergedRosterTableBody(rows: PrintRow[]): string {
@@ -922,38 +1019,98 @@ function exportRosterPdf({
   fileName,
   title,
   rows,
+  headmasterName,
+  signatureDate,
 }: {
   fileName: string;
   title: string;
   rows: PrintRow[];
+  headmasterName: string;
+  signatureDate: string;
 }) {
   const pdf = new jsPDF();
 
   pdf.setFontSize(18);
   pdf.text(`KARTU ${title.toUpperCase()}`, 105, 22, { align: "center" });
-  pdf.setFontSize(10);
-  pdf.text(`Tanggal cetak: ${new Date().toLocaleString("id-ID")}`, 14, 32);
-  pdf.text(`Total baris: ${rows.length}`, 14, 38);
-  pdf.line(14, 42, 196, 42);
+
+  const mergedBody = buildMergedRosterPdfBody(rows);
 
   autoTable(pdf, {
     startY: 48,
-    head: [["Hari", "Jam", "Guru", "Kelas", "Mapel"]],
-    body: rows.length
-      ? rows.map((row) => [row.day, row.time, row.teacher, row.className, row.subject])
-      : [["Tidak ada data", "", "", "", ""]],
+    columns: [
+      { header: "Hari", dataKey: "day" },
+      { header: "Jam", dataKey: "time" },
+      { header: "Guru", dataKey: "teacher" },
+      { header: "Kelas", dataKey: "className" },
+      { header: "Mapel", dataKey: "subject" },
+    ],
+    body: (rows.length
+      ? mergedBody
+      : [{ day: "Tidak ada data", time: "", teacher: "", className: "", subject: "" }]) as unknown as string[][],
     styles: {
       fontSize: 9,
       cellPadding: 3,
+      lineWidth: 0.2,
+      lineColor: [180, 180, 180],
     },
     headStyles: {
       fillColor: [15, 118, 110],
+      lineWidth: 0.25,
+      lineColor: [80, 80, 80],
+    },
+    bodyStyles: {
+      lineWidth: 0.2,
+      lineColor: [180, 180, 180],
     },
     didDrawPage: () => {
-      const pageHeight = pdf.internal.pageSize.getHeight();
       pdf.setFontSize(9);
     },
   });
 
+  const finalY = (pdf as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? 48;
+  let signatureY = finalY + 16;
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  if (signatureY + 36 > pageHeight) {
+    pdf.addPage();
+    signatureY = 40;
+  }
+
+  const signTextX = 132;
+  const signLineWidth = 60;
+  pdf.setFontSize(10);
+  pdf.text(`Tanggal, ${formatSignatureDate(signatureDate)}`, signTextX, signatureY);
+  pdf.text("Mengetahui,", signTextX, signatureY + 6);
+  pdf.text("Kepala Sekolah", signTextX, signatureY + 12);
+  pdf.line(signTextX - 4, signatureY + 24, signTextX + signLineWidth, signatureY + 24);
+  pdf.text(headmasterName || "(Nama Kepala Sekolah)", signTextX + signLineWidth / 2 - 4, signatureY + 32, {
+    align: "center",
+  });
+
   pdf.save(fileName);
+}
+
+function formatSignatureDate(value: string) {
+  if (!value) {
+    return "-";
+  }
+
+  const [yearRaw, monthRaw, dayRaw] = value.split("-");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+
+  if (!year || !month || !day) {
+    return value;
+  }
+
+  return new Date(year, month - 1, day).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
 }
